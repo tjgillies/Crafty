@@ -310,6 +310,21 @@ Crafty.fn = Crafty.prototype = {
 //give the init instances the Crafty prototype
 Crafty.fn.init.prototype = Crafty.fn;
 
+//FIXME
+Crafty.clone2 = function (obj){
+	if(obj == null || typeof(obj) != 'object')
+		return obj;
+		
+	if (obj.constructor) {
+		var temp = obj.constructor(); // changed
+	} else {
+		var temp = obj;
+	}
+	for(var key in obj)
+		temp[key] = Crafty.clone2(obj[key]);
+	return temp;
+};
+
 /**
 * Extension method to extend the namespace and
 * selector instances
@@ -320,8 +335,13 @@ Crafty.extend = Crafty.fn.extend = function(obj) {
 	if(!obj) return target;
 	
 	for(key in obj) {
+		//FIXME
 		if(target === obj[key]) continue; //handle circular reference
-		target[key] = obj[key];
+		if (typeof obj[key] == 'object' && key=="_Particles") {
+			target[key] = Crafty.clone2(obj[key]);
+		} else {
+			target[key] = obj[key];
+		}
 	}
 	return target;
 };
@@ -1134,14 +1154,25 @@ Crafty.c("gravity", {
 			this._gy = 0; //reset change in y
 		}
 
-		var obj, hit = false,
-			q = Crafty.map.search(this.pos()),
-			i = 0, l = q.length;
-			
+		var obj, hit = false, pos = this.pos(),
+			q, i = 0, l;
+
+		//Increase by 1 to make sure map.search() finds the floor
+		pos._y++;
+
+		//map.search wants _x and intersect wants x...
+		pos.x = pos._x;
+		pos.y = pos._y;
+		pos.w = pos._w;
+		pos.h = pos._h;
+
+		q = Crafty.map.search(pos);
+		l = q.length;
+
 		for(;i<l;++i) {
 			obj = q[i];
 			//check for an intersection directly below the player
-			if(obj !== this && obj.has(this._anti) && obj.intersect(this)) {
+			if(obj !== this && obj.has(this._anti) && obj.intersect(pos)) {
 				hit = obj;
 				break;
 			}
@@ -2247,6 +2278,8 @@ Crafty.c("controls", {
 			} else if(e.type === "keyup") {
 				delete Crafty.keydown[e.key];
 			}
+			//FIXME
+			if (this.disableControls) return;
 			this.trigger(e.type, e);
 		}
 		
@@ -2417,7 +2450,7 @@ Crafty.c("animate", {
 
 	animate: function(id, fromx, y, tox) {
 		//play a reel
-		if(arguments.length === 2 && typeof fromx === "number") {
+		if(arguments.length < 4 && typeof fromx === "number") {
 			//make sure not currently animating
 			this._current = id;
 			
@@ -2427,9 +2460,14 @@ Crafty.c("animate", {
 				reel: reel, //reel to play
 				frameTime: Math.ceil(duration / reel.length), //number of frames inbetween slides
 				frame: 0, //current slide/frame
-				current: 0
+				current: 0,
+				repeat: 0
 			};
-			
+			if (arguments.length === 3 && typeof y === "number") {
+				//User provided repetition count
+				if (y === 0) this._frame.repeatInfinitly = true;
+				else this._frame.repeat = y;
+			}
 			this.bind("enterframe", this.drawFrame);
 			return this;
 		}
@@ -2470,7 +2508,15 @@ Crafty.c("animate", {
 		
 		if(data.frame === data.reel.length && this._frame.current === data.frameTime) {
 			data.frame = 0;
-			
+			if (this._frame.repeatInfinitly === true || this._frame.repeat > 0) {
+				if (this._frame.repeat) this._frame.repeat--;
+				this._frame.current = 0;
+				this._frame.frame = 0;
+			} else {
+				this.trigger("animationend", {reel: data.reel});
+				this.stop();
+				return;
+			}
 			this.trigger("animationend", {reel: data.reel});
 			this.stop();
 			return;
@@ -2826,7 +2872,7 @@ Crafty.DrawManager = (function() {
 		* Returns coords
 		*/
 		boundingRect: function(set) {
-			if (!set.length) return;
+			if (!set || !set.length) return;
 			var newset = [], i = 1,
 			l = set.length, current, master=set[0], tmp;
 			master=[master._x, master._y, master._x + master._w, master._y + master._h];
@@ -3065,30 +3111,26 @@ Crafty.c("particles", {
 
 		this._Particles.init(options);
 
-
 		relativeX = this.x + Crafty.viewport.x;
 		relativeY = this.y + Crafty.viewport.y;
 		this._Particles.position = this._Particles.vectorHelpers.create(relativeX, relativeY);
-		this._Particles.update();
 
+		var oldViewport = {x: Crafty.viewport.x, y:Crafty.viewport.y};
+		
 		this.bind('enterframe', function () {
 			relativeX = this.x + Crafty.viewport.x;
 			relativeY = this.y + Crafty.viewport.y;
+			this._Particles.viewportDelta = {x: Crafty.viewport.x - oldViewport.x, y: Crafty.viewport.y - oldViewport.y};
+
+			oldViewport = {x: Crafty.viewport.x, y:Crafty.viewport.y};
+				
 			this._Particles.position = this._Particles.vectorHelpers.create(relativeX, relativeY);
 
-
-			//Version A
-			//Clear area around all rects
-			// for (var i=0; i < this._Particles.register.length; i++) {
-			// 	curpar=this._Particles.register[i];
-			// 	ctx.clearRect( curpar._x,curpar._y, curpar._w,curpar._h );
-			// };
-			//Version B
+			//Selective clearing
 			if (typeof Crafty.DrawManager.boundingRect == 'function') {
 				bounding = Crafty.DrawManager.boundingRect(this._Particles.register);
 				if (bounding) ctx.clearRect(bounding._x, bounding._y, bounding._w, bounding._h);
 			} else {
-				//Version C
 				ctx.clearRect(0, 0, Crafty.viewport.width, Crafty.viewport.height);
 			}
 
@@ -3229,6 +3271,7 @@ Crafty.c("particles", {
 					// Calculate the new direction based on gravity
 					currentParticle.direction = this.vectorHelpers.add(currentParticle.direction, this.gravity);
 					currentParticle.position = this.vectorHelpers.add(currentParticle.position, currentParticle.direction);
+					currentParticle.position = this.vectorHelpers.add(currentParticle.position, this.viewportDelta);
 					currentParticle.timeToLive--;
 
 					// Update colours

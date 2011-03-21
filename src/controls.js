@@ -156,6 +156,8 @@ Crafty.c("controls", {
 			} else if(e.type === "keyup") {
 				delete Crafty.keydown[e.key];
 			}
+			//FIXME
+			if (this.disableControls) return;
 			this.trigger(e.type, e);
 		}
 		
