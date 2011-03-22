@@ -382,6 +382,27 @@ Crafty.extend({
 		return this;
 	},
 	
+	//Unbinds all enterframe handlers and stores them away
+	//Calling .pause() again will restore previously deactivated handlers.
+	pause: function() {
+		if (!this._paused){
+			this._paused = true;
+			Crafty._pausedEvents = {};
+			
+			for (handler in handlers['enterframe']){
+				Crafty._pausedEvents[handler] = handlers['enterframe'][handler];
+				delete handlers['enterframe'][handler];
+			};
+		} else {
+			this._paused = false;
+			
+			for (handler in Crafty._pausedEvents){
+				handlers['enterframe'][handler] = Crafty._pausedEvents[handler];
+			};
+		}
+		return this;
+	},
+	
 	timer: {
 		prev: (+new Date),
 		current: (+new Date),
@@ -1190,7 +1211,7 @@ Crafty.c("gravity", {
 
 		//this._gy = -1 * this._bounce;
 		this._falling = false;
-		if(this.__move && this.__move.up) this.__move.up = false;
+		if(this._up) this._up = false;
 		this.trigger("hit");
 	},
 
@@ -1903,6 +1924,13 @@ Crafty.extend({
 				Crafty.stage.y = offset.y;
 			});
 			
+			Crafty.addEvent(this, window, "blur", function() {
+				if (!Crafty.dontPauseOnBlur) Crafty.pause();
+			});
+			Crafty.addEvent(this, window, "focus", function() {
+				if (Crafty._paused) Crafty.pause();
+			});
+
 			
 			//add to the body and give it an ID if not exists
 			if(!crstage) {
@@ -1951,7 +1979,95 @@ Crafty.extend({
 	/**
 	* Map key names to key codes
 	*/
-	keys: {'BSP':8, 'TAB':9, 'ENT':13, 'SHF':16, 'CTR':17, 'ALT':18, 'PAU':19, 'CAP':20, 'ESC':27, 'SP':32, 'PGU':33, 'PGD':34, 'END':35, 'HOM':36, 'LA':37, 'UA':38, 'RA':39, 'DA':40, 'INS':45, 'DEL':46, 'D0':48, 'D1':49, 'D2':50, 'D3':51, 'D4':52, 'D5':53, 'D6':54, 'D7':55, 'D8':56, 'D9':57, 'SEM':59, 'EQL':61, 'A':65, 'B':66, 'C':67, 'D':68, 'E':69, 'F':70, 'G':71, 'H':72, 'I':73, 'J':74, 'K':75, 'L':76, 'M':77, 'N':78, 'O':79, 'P':80, 'Q':81, 'R':82, 'S':83, 'T':84, 'U':85, 'V':86, 'W':87, 'X':88, 'Y':89, 'Z':90, 'LWN':91, 'RWN':92, 'SEL':93, 'N0':96, 'N1':97, 'N2':98, 'N3':99, 'N4':100, 'N5':101, 'N6':102, 'N7':103, 'N8':104, 'N9':105, 'MUL':106, 'ADD':107, 'SUB':109, 'DEC':110, 'DIV':111, 'F1':112, 'F2':113, 'F3':114, 'F4':115, 'F5':116, 'F6':117, 'F7':118, 'F8':119, 'F9':120, 'F10':121, 'F11':122, 'F12':123, 'NUM':144, 'SCR':145, 'COM':188, 'PER':190, 'FSL':191, 'ACC':192, 'OBR':219, 'BSL':220, 'CBR':221, 'QOT':222}
+	keys: {
+		'BACKSPACE': 8,
+        'TAB': 9,
+        'ENTER': 13,
+        'PAUSE': 19,
+        'CAPS': 20,
+        'ESC': 27,
+        'SPACE': 32,
+        'PAGE_UP': 33,
+        'PAGE_DOWN': 34,
+        'END': 35,
+        'HOME': 36,
+        'LEFT_ARROW': 37,
+        'UP_ARROW': 38,
+        'RIGHT_ARROW': 39,
+        'DOWN_ARROW': 40,
+        'INSERT': 45,
+        'DELETE': 46,
+        '0': 48,
+        '1': 49,
+        '2': 50,
+        '3': 51,
+        '4': 52,
+        '5': 53,
+        '6': 54,
+        '7': 55,
+        '8': 56,
+        '9': 57,
+        'A': 65,
+        'B': 66,
+        'C': 67,
+        'D': 68,
+        'E': 69,
+        'F': 70,
+        'G': 71,
+        'H': 72,
+        'I': 73,
+        'J': 74,
+        'K': 75,
+        'L': 76,
+        'M': 77,
+        'N': 78,
+        'O': 79,
+        'P': 80,
+        'Q': 81,
+        'R': 82,
+        'S': 83,
+        'T': 84,
+        'U': 85,
+        'V': 86,
+        'W': 87,
+        'X': 88,
+        'Y': 89,
+        'Z': 90,
+        'NUMPAD_0': 96,
+        'NUMPAD_1': 97,
+        'NUMPAD_2': 98,
+        'NUMPAD_3': 99,
+        'NUMPAD_4': 100,
+        'NUMPAD_5': 101,
+        'NUMPAD_6': 102,
+        'NUMPAD_7': 103,
+        'NUMPAD_8': 104,
+        'NUMPAD_9': 105,
+        'MULTIPLY': 106,
+        'ADD': 107,
+        'SUBSTRACT': 109,
+        'DECIMAL': 110,
+        'DIVIDE': 111,
+        'F1': 112,
+        'F2': 113,
+        'F3': 114,
+        'F4': 115,
+        'F5': 116,
+        'F6': 117,
+        'F7': 118,
+        'F8': 119,
+        'F9': 120,
+        'F10': 121,
+        'F11': 122,
+        'F12': 123,
+        'SHIFT': 16,
+        'CTRL': 17,
+        'ALT': 18,
+        'PLUS': 187,
+        'COMMA': 188,
+        'MINUS': 189,
+        'PERIOD': 190 
+	}
 });
 
 /**
@@ -2281,6 +2397,13 @@ Crafty.c("controls", {
 			//FIXME
 			if (this.disableControls) return;
 			this.trigger(e.type, e);
+				
+			//prevent searchable keys
+			if(!(e.metaKey || e.altKey || e.ctrlKey) && !(e.key == 8 || e.key >= 112 && e.key <= 135)) {
+				if(e.preventDefault) e.preventDefault();
+				else e.returnValue = false;
+				return false;
+			}
 		}
 		
 		Crafty.addEvent(this, "keydown", dispatch);
@@ -2303,75 +2426,32 @@ Crafty.c("controls", {
 			key = Crafty.keys[key];
 		}
 		return !!Crafty.keydown[key];
-	},
-	
-	preventTypeaheadFind: function(e) {
-		if(!(e.metaKey || e.altKey || e.shiftKey || e.ctrlKey) && e.preventDefault){
-			e.preventDefault();
-		}
-		return this;
- 	}
+	}
 });
 
-Crafty.c("fourway", {
-	__move: {left: false, right: false, up: false, down: false},	
+Crafty.c("fourway", {	
 	_speed: 3,
 	
 	init: function() {
-		if(!this.has("controls")) this.addComponent("controls");
+		this.requires("controls");
 	},
 	
 	fourway: function(speed) {
 		if(speed) this._speed = speed;
-		var move = this.__move;
 		
 		this.bind("enterframe", function() {
-			var old = this.pos(),
-				changed = false;
-			if(move.right) {
+			if(this.isDown("RIGHT_ARROW") || this.isDown("D")) {
 				this.x += this._speed;
-				changed = true;
 			}
-			if(move.left) {
+			if(this.isDown("LEFT_ARROW") || this.isDown("A")) {
 				this.x -= this._speed;
-				changed = true;
 			}
-			if(move.up) {
+			if(this.isDown("UP_ARROW") || this.isDown("W")) {
 				this.y -= this._speed;
-				changed = true;
 			}
-			if(move.down) {
+			if(this.isDown("DOWN_ARROW") || this.isDown("S")) {
 				this.y += this._speed;
-				changed = true;
 			}
-		}).bind("keydown", function(e) {
-			if(e.keyCode === Crafty.keys.RA || e.keyCode === Crafty.keys.D) {
-				move.right = true;
-			}
-			if(e.keyCode === Crafty.keys.LA || e.keyCode === Crafty.keys.A) {
-				move.left = true;
-			}
-			if(e.keyCode === Crafty.keys.UA || e.keyCode === Crafty.keys.W) {
-				move.up = true;
-			}
-			if(e.keyCode === Crafty.keys.DA || e.keyCode === Crafty.keys.S) {
-				move.down = true;
-			}
-			this.preventTypeaheadFind(e);
-		}).bind("keyup", function(e) {
-			if(e.keyCode === Crafty.keys.RA || e.keyCode === Crafty.keys.D) {
-				move.right = false;
-			}
-			if(e.keyCode === Crafty.keys.LA || e.keyCode === Crafty.keys.A) {
-				move.left = false;
-			}
-			if(e.keyCode === Crafty.keys.UA || e.keyCode === Crafty.keys.W) {
-				move.up = false;
-			}
-			if(e.keyCode === Crafty.keys.DA || e.keyCode === Crafty.keys.S) {
-				move.down = false;
-			}
-			this.preventTypeaheadFind(e);
 		});
 		
 		return this;
@@ -2379,52 +2459,30 @@ Crafty.c("fourway", {
 });
 
 Crafty.c("twoway", {
-	__move: {left: false, right: false, up: false, falling: false},
 	_speed: 3,
+	_up: false,
 	
 	init: function() {
-		if(!this.has("controls")) this.addComponent("controls");
+		this.requires("controls");
 	},
 	
 	twoway: function(speed,jump) {
 		if(speed) this._speed = speed;
 		jump = jump || this._speed * 2;
 		
-		var move = this.__move;
-		
 		this.bind("enterframe", function() {
-			var old = this.pos(),
-				changed = false;
-			if(move.right) {
+			if(this.isDown("RIGHT_ARROW") || this.isDown("D")) {
 				this.x += this._speed;
-				changed = true;
 			}
-			if(move.left) {
+			if(this.isDown("LEFT_ARROW") || this.isDown("A")) {
 				this.x -= this._speed;
-				changed = true;
 			}
-			if(move.up) {
+			if(this._up) {
 				this.y -= jump;
 				this._falling = true;
-				changed = true;
 			}
-		}).bind("keydown", function(e) {
-			if(e.keyCode === Crafty.keys.RA || e.keyCode === Crafty.keys.D) {
-				move.right = true;
-			}
-			if(e.keyCode === Crafty.keys.LA || e.keyCode === Crafty.keys.A) {
-				move.left = true;
-			}
-			if(e.keyCode === Crafty.keys.UA || e.keyCode === Crafty.keys.W) {
-				move.up = true;
-			}
-		}).bind("keyup", function(e) {
-			if(e.keyCode === Crafty.keys.RA || e.keyCode === Crafty.keys.D) {
-				move.right = false;
-			}
-			if(e.keyCode === Crafty.keys.LA || e.keyCode === Crafty.keys.A) {
-				move.left = false;
-			}
+		}).bind("keydown", function() {
+			if(this.isDown("UP_ARROW") || this.isDown("W")) this._up = true;
 		});
 		
 		return this;
