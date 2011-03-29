@@ -385,6 +385,7 @@ Crafty.extend({
 				Crafty._pausedEvents[handler] = handlers['enterframe'][handler];
 				delete handlers['enterframe'][handler];
 			};
+			Crafty.keydown={};
 		} else {
 			this._paused = false;
 			

@@ -31,7 +31,7 @@ Crafty.c("animate", {
 			};
 			if (arguments.length === 3 && typeof y === "number") {
 				//User provided repetition count
-				if (y === 0) this._frame.repeatInfinitly = true;
+				if (y === -1) this._frame.repeatInfinitly = true;
 				else this._frame.repeat = y;
 			}
 			this.bind("enterframe", this.drawFrame);
@@ -83,9 +83,6 @@ Crafty.c("animate", {
 				this.stop();
 				return;
 			}
-			this.trigger("animationend", {reel: data.reel});
-			this.stop();
-			return;
 		}
 		
 		this.trigger("change");

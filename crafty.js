@@ -393,6 +393,7 @@ Crafty.extend({
 				Crafty._pausedEvents[handler] = handlers['enterframe'][handler];
 				delete handlers['enterframe'][handler];
 			};
+			Crafty.keydown={};
 		} else {
 			this._paused = false;
 			
@@ -2394,7 +2395,6 @@ Crafty.c("controls", {
 			} else if(e.type === "keyup") {
 				delete Crafty.keydown[e.key];
 			}
-			//FIXME
 			if (this.disableControls) return;
 			this.trigger(e.type, e);
 				
@@ -2523,7 +2523,7 @@ Crafty.c("animate", {
 			};
 			if (arguments.length === 3 && typeof y === "number") {
 				//User provided repetition count
-				if (y === 0) this._frame.repeatInfinitly = true;
+				if (y === -1) this._frame.repeatInfinitly = true;
 				else this._frame.repeat = y;
 			}
 			this.bind("enterframe", this.drawFrame);
@@ -2575,9 +2575,6 @@ Crafty.c("animate", {
 				this.stop();
 				return;
 			}
-			this.trigger("animationend", {reel: data.reel});
-			this.stop();
-			return;
 		}
 		
 		this.trigger("change");
@@ -3518,8 +3515,8 @@ Crafty.c("particles", {
 				audio.load();
 				sounds.push(audio);
 			}
-			this._elems[key] = sounds;
-			if(!Crafty.assets[url]) Crafty.assets[url] = this._elems[key][0];
+			this._elems[id] = sounds;
+			if(!Crafty.assets[url]) Crafty.assets[url] = this._elems[id][0];
 			
 			return this;		
 		},
@@ -3658,6 +3655,8 @@ Crafty.extend({
 
 			if(Crafty.support.audio && (ext === "mp3" || ext === "wav" || ext === "ogg" || ext === "mp4")) {
 				obj = new Audio(current);
+				//Chrome doesn't trigger onload on audio, see http://code.google.com/p/chromium/issues/detail?id=77794
+				if (navigator.userAgent.indexOf('Chrome') != -1) j++;
 			} else if(ext === "jpg" || ext === "jpeg" || ext === "gif" || ext === "png") {
 				obj = new Image();
 				obj.src = current;
